@@ -1,0 +1,5 @@
+Maya Plugin.
+
+Adaptively tesellates a mesh according to the gradient in the displacement image. Useful for displacing geometry in the viewport itself, for accurate collision detections.
+
+Maya dependencies: OpenMaya, Foundation

@@ -1,0 +1,17 @@
+loadPlugin tesellator;
+
+string $tess = `createNode tesellator`;
+
+string $obj[] = `ls -sl`;
+
+int $size = `size( $obj )`;
+
+for( $each in $obj ) {
+    string $shapes[] = `listRelatives -shapes $each`;
+    string $incomingInMesh[] = `listConnections -d off -s on -plugs on ( $shapes[0] + ".inMesh" )`;
+    
+    connectAttr -f ( $incomingInMesh[0] ) ( $tess + ".inputMesh" );
+    connectAttr -f ( $tess + ".outputMesh" ) ( $shapes[0] + ".inMesh" );
+
+    deformer -type displace $each;
+}

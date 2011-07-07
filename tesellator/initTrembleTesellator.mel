@@ -1,0 +1,19 @@
+loadPlugin tesellator;
+
+string $tremble = `createNode tremble`;
+
+string $obj[] = `ls -sl`;
+
+int $size = `size( $obj )`;
+
+for( $each in $obj ) {
+    string $shapes[] = `listRelatives -shapes $each`;
+    string $incominrgInMesh[] = `listConnections -d off -s on -plugs on ( $shapes[0] + ".inMesh" )`;
+    
+    string $trembled = `createNode -parent $each mesh`;
+    $trembled = `rename $trembled "trembled#"`;
+    
+    connectAttr -f ( $shapes[0] + ".worldMesh" ) ( $tremble + ".inputMesh" );
+    connectAttr -f ( $tremble + ".outputMesh" ) ( $trembled + ".inMesh" );
+    sets -addElement initialShadingGroup $trembled;
+}
