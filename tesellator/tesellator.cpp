@@ -142,33 +142,45 @@ void evenOut( MObject &inputMeshObj )
 	MFnMesh meshFn( inputMeshObj );
 
 	MPointArray meshPoints;
-	meshFn.getPoints( meshPoints );
 
 	for( polyIt.reset(); !polyIt.isDone(); polyIt.next() ) {
-		if( polyIt.polygonVertexCount() > 4 ) {
+		int numVertices = polyIt.polygonVertexCount();
+
+		if( numVertices > 4 ) {
 			MPointArray points;
 			polyIt.getPoints( points );
-			MPoint avgPoint = points[0];
+
+			//MPoint avgPoint = points[0];
+
+			//{
+			//	for( int i = 1; i < points.length(); i++ ) {
+			//		avgPoint += points[ i ];
+			//	}
+			//}
+
+			//avgPoint = avgPoint / points.length();
+			//
+			//points.append( avgPoint );
 
 			{
-				for( int i = 1; i < points.length(); i++ ) {
-					avgPoint += points[ i ];
-				}
-			}
+				meshFn.deleteFace( polyIt.index() );
+				int magicNumber = ( numVertices % 2 ) ? numVertices / 2 : numVertices / 2 - 1;
 
-			avgPoint = avgPoint / points.length();
-			
-			points.append( avgPoint );
+				for( int i = 0; i < points.length() - 1; i++ ) {
+					if( i != magicNumber ) {
+						MPointArray newPoints;
+						newPoints.append( points[ i ] );
+						newPoints.append( points[ i + 1 ] );
+						newPoints.append( points[ numVertices - 1 - i ] );
 
-			{
-				for( int i = 0; i < points.length(); i++ ) {
-					
+						meshFn.addPolygon( newPoints, true, 0.1, inputMeshObj );						
+					}
 				}
 			}
 		}
 	}
 
-	meshFn.getPoints( meshPoints );
+	polyIt.updateSurface();
 }
 
 void displace( MObject &inputMeshObj, MImage &dMapsImage, double displaceScale, bool invert )
@@ -533,87 +545,6 @@ MStatus tesellator::compute( const MPlug &plug, MDataBlock &block )
 #endif
 	
 	if( plug == outputMeshAttr ) {
-		/*
-		MArrayDataHandle dMapHndArray = block.inputArrayValue( displacementMapAttr );
-		unsigned int numDMaps = dMapHndArray.elementCount();
-
-		MStringArray dMapPathArray;
-
-		if( block.inputValue( isFrameSeqAttr ).asBool() ) {
-			int currentFrame = ( int ) block.inputValue( timeAttr ).asTime().value();
-			int frameOffset = block.inputValue( frameOffsetAttr ).asInt();
-
-			createFilePathArray( dMapHndArray, dMapPathArray, currentFrame + frameOffset );
-		}
-		else {
-			createFilePathArray( dMapHndArray, dMapPathArray );
-		}
-
-		MImage dMapsImage;
-		
-		compileDMaps( &dMapsImage, dMapPathArray );
-
-		MObject inputMeshObj = block.inputValue( inputMeshAttr ).asMeshTransformed();
-
-		int numPasses = block.inputValue( numPassesAttr ).asInt();
-		double displaceScale = block.inputValue( displaceScaleAttr ).asDouble();
-
-		if( numDMaps > 0 ) {
-			for( int p = 0; p < numPasses; p++ ) {
-				subdivide( inputMeshObj, block, &dMapsImage );
-			}
-
-			//displace
-			{
-				bool invert = block.inputValue( inverseAttr ).asBool();
-				MItMeshVertex vertIt( inputMeshObj );
-
-				MVectorArray normalArray;
-				normalArray.setLength( vertIt.count() );
-
-				for( vertIt.reset(); !vertIt.isDone(); vertIt.next() ) {
-					MVector normal;
-					vertIt.getNormal( normal );
-					normalArray[ vertIt.index() ] = normal;
-				}
-
-				unsigned int w,h, d = dMapsImage.depth();
-				dMapsImage.getSize( w,h );
-
-				unsigned char *dMapsData = dMapsImage.pixels();
-
-				for( vertIt.reset(); !vertIt.isDone(); vertIt.next() ) {
-					int index = vertIt.index();
-
-					float uv[2];
-					vertIt.getUV( uv );
-
-					int x = (int)( uv[0] * w ) == w ? ( w - 1 ) : ( uv[0] * w );
-					int y = (int)( uv[1] * h ) == h ? ( h - 1 ) : ( uv[1] * h );
-
-					int offset = y * w + x;
-
-					double amt = dMapsData[ offset * d ];
-
-					amt /= 255.f;
-
-					MPoint displacedPnt = MPoint( amt * normalArray[ index ] .x, amt * normalArray[ index ].y, amt * normalArray[ index ].z );
-					MPoint scaledPnt = displacedPnt * displaceScale;
-
-					if( invert ) {
-						vertIt.translateBy( MPoint( -scaledPnt.x, -scaledPnt.y, -scaledPnt.z, scaledPnt.w ));
-					}
-					else {
-						vertIt.translateBy( scaledPnt );
-					}
-				}
-			}
-			
-			//bool invert = block.inputValue( inverseAttr ).asBool();
-			//displace( inputMeshObj, dMapsImage, displaceScale, invert );
-		}
-		*/
-
 		MObject inputMeshObj = block.inputValue( inputMeshAttr ).asMeshTransformed();
 		
 		MPlug ipColorPlug( thisMObject(), inputColorAttr );
@@ -629,9 +560,8 @@ MStatus tesellator::compute( const MPlug &plug, MDataBlock &block )
 
 			for( int p = 0; p < numPasses; p++ ) {
 				subdivide( inputMeshObj, block, ipColor );
+				evenOut( inputMeshObj );
 			}
-
-			evenOut( inputMeshObj );
 		}
 		else {
 		}
